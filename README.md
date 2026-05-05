@@ -88,9 +88,4 @@ Results are written to `data/<run_name>/`. Analyze with `experiment_analysis_LSE
 
 For the nonlinear setting, run [experiments_script/nonlinear_SEM.py](experiments_script/nonlinear_SEM.py).
 
-## Key parameters
 
-- `n_candidates` — number of top-ranked nodes considered at each peeling step.
-- `alpha` — significance level for the nonzero-correlation test.
-- `epsilon` — equivalence margin for the small-correlation test.
-- `pool_multiplier` (ancestor-search variant) — pool size for parent search, as a multiple of `n_candidates`.
