@@ -75,17 +75,3 @@ Lambda_est, node_order = TSCD(X_list, B, n_candidates=2)
 
 `X_list[i]` is the sample matrix for environment `i`; `B[j, i] == 1` indicates that node `j` is intervened in environment `i`.
 
-## Running experiments
-
-Edit the hyperparameters at the top of [experiments_script/experiment_harness_LSEM.py](experiments_script/experiment_harness_LSEM.py) (sweep ranges, methods, noise model), then:
-
-```bash
-cd experiments_script
-python experiment_harness_LSEM.py
-```
-
-Results are written to `data/<run_name>/`. Analyze with `experiment_analysis_LSEM.ipynb`.
-
-For the nonlinear setting, run [experiments_script/nonlinear_SEM.py](experiments_script/nonlinear_SEM.py).
-
-
