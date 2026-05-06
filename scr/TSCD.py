@@ -5,12 +5,12 @@ from sklearn.linear_model import LassoLarsIC
 from sklearn.preprocessing import StandardScaler
 from scipy.linalg import qr as scipy_qr
 from scipy.stats import t, norm
-from utils import _estimate_adjacency_matrix,_update_cov_list
+from myutils import _estimate_adjacency_matrix,_update_cov_list
 try:
-    from .utils import *
+    from .myutils import *
     from .generate_LSEM import *
 except ImportError:
-    from utils import *
+    from myutils import *
     from generate_LSEM import *
 
 

@@ -20,7 +20,7 @@ def concentration_list(X_list, B):
         Cov_i = covariance(X_list[i])
         M = np.linalg.pinv(Cov_i)
         for j in range(B.shape[0]): 
-            if B[j, i] == 0:
+            if B[j, i] == 0 and Cov_i[j,j]!=0:
                 M[j,j]-= 1/Cov_i[j,j]
         M_list.append(M)   
     return M_list

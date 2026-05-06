@@ -5,10 +5,10 @@ from sklearn.linear_model import LassoLarsIC
 from sklearn.preprocessing import StandardScaler
 from scipy.linalg import qr as scipy_qr
 from scipy.stats import t, norm
-from utils import _update_cov_list, lambda_from_causal_order_regression
+from myutils import _update_cov_list, lambda_from_causal_order_regression
 from TSCD import analyze_correlation
 try:
-    from .utils import *
+    from .myutils import *
     from .generate_LSEM import *
 except ImportError:
     from utils import *
