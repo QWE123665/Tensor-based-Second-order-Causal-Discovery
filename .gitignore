@@ -20,5 +20,5 @@ experiments_script/data/
 venv/
 env/
 
-
-causal_discovery_iid.ipynb
+causal_chamber.ipynb
+perturb-seq/
