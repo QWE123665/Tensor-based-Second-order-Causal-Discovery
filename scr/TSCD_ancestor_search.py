@@ -11,7 +11,7 @@ try:
     from .myutils import *
     from .generate_LSEM import *
 except ImportError:
-    from utils import *
+    from myutils import *
     from generate_LSEM import *
 
 
@@ -256,6 +256,9 @@ def causal_order_from_parent_search(
     while len(perm) < n:
         p = covlist[0].shape[0]
         T_U = orthonormal_from_householder_qr(T)
+
+        if verbose:
+            print('T_u computed')
         B_local = B[original_indices, :]
 
         proj_norms = np.array([
@@ -268,6 +271,9 @@ def causal_order_from_parent_search(
             ) / np.linalg.norm(B_local[i, :])
             for i in range(p)
         ])
+
+        # if proj_norms = 0 it means the node's variance is 0 so also treated as stable 
+        proj_norms = np.where(proj_norms == 0, 1, proj_norms)
 
         n_seed = max(1, min(int(n_candidates), p))
         n_pool = max(n_seed, min(int(pool_multiplier) * int(n_candidates), p))

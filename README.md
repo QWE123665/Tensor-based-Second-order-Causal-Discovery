@@ -26,7 +26,7 @@ scr/
   generate_LSEM.py           # synthetic linear SEM data generation
   utils.py                   # tensor / regression helpers
   metrics.py                 # SHD, edge-error, etc.
-  nonlinear.py               # nonlinear SEM extension
+  TSCD_nonlinear.py          # nonlinear SEM extension
   other_algorithms/          # baselines: GES, GIES, PC, IGSP, LiNGAM, NoTears, sort_regress
 experiments_script/
   experiment_harness_LSEM.py # sweep over (n_nodes, sample_size, edge_prob, noise) x methods

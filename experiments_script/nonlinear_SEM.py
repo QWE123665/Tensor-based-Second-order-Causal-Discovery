@@ -6,12 +6,12 @@ import numpy as np
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "scr"))
 
-from nonlinear import (
+from TSCD_nonlinear import (
     SEED,
     SEM_perfect_intervention,
     generate_DAG,
     generate_binary_adjacency_matrix,
-    learn_graph_parallel,
+    TSCD_nonlinear_parallel,
 )
 from generate_LSEM import binary_code_single_intervene
 
@@ -49,7 +49,7 @@ nodes_sorted = sorted(samples[0].keys())
 var_per_node = np.array([np.var(samples[0][k]) for k in nodes_sorted])
 order_by_var = [nodes_sorted[i] for i in np.argsort(var_per_node)]
 print('sortvar', order_by_var,'count_error',count_wrong_parents(order_by_var,DAG))
-perm, graph_hat, _ = learn_graph_parallel(samples, intervention_matrix, verbose=False, max_workers = 5)
+perm, graph_hat, _ = TSCD_nonlinear_parallel(samples, intervention_matrix, verbose=False, max_workers = 5)
 graph_true = generate_binary_adjacency_matrix(DAG)
 
 shd = int(np.abs(graph_true - graph_hat).sum())  # edge mismatches (directed)

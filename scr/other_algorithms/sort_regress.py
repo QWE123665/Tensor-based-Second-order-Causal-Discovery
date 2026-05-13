@@ -1,5 +1,5 @@
 import numpy as np
-from utils import _estimate_adjacency_matrix
+from myutils import _estimate_adjacency_matrix
 
 
 

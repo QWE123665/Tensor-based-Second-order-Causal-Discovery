@@ -87,7 +87,12 @@ def analyze_pair(i, j, cov_list, B, sample_sizes, verbose=False, alpha=0.05, eps
 
     k = B.shape[1]
     interventions = B[[i,j],:]
-    corr_list = [cov_list[l][i,j]/np.sqrt(cov_list[l][i,i]*cov_list[l][j,j]) for l in range(k)]
+    corr_list = [
+        cov_list[l][i,j]/np.sqrt(cov_list[l][i,i]*cov_list[l][j,j])
+        if cov_list[l][i,i] > 0 and cov_list[l][j,j] > 0
+        else 0
+        for l in range(k)
+    ]
     both_exist = [l for l in range(k) if (interventions[0,l] & interventions[1,l])]
     intervened_not = [l  for l in range(k) if (~interventions[0,l] & interventions[1,l]) ]
     not_intervened = [l for l in range(k) if (interventions[0,l] & ~interventions[1,l]) ]
@@ -180,6 +185,9 @@ def _select_root_by_stability_proj_norm_simplify(
         ) / np.linalg.norm(B[possible_idxs[i], :])
         for i in range(T_U.shape[0])
     ])
+
+    # if proj_norms = 0 it means the node's variance is 0 so also treated as stable 
+    proj_norms = np.where(proj_norms == 0, 1, proj_norms)
 
     if p <= n_candidates:
         close_node_ids = possible_idxs

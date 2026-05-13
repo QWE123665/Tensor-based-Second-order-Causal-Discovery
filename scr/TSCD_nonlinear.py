@@ -338,7 +338,6 @@ def find_root(samples, candidates, intervention_matrix):
         for k in range(intervention_matrix.shape[1]):
             if intervention_matrix[node, k] == 1:
                 weighted_vars.append(np.var(samples[k][node]) / row_sum)
-        # print(f'node {node}, weighted_vars {weighted_vars}')
         if len(weighted_vars) < 2:
             continue
         
@@ -346,13 +345,12 @@ def find_root(samples, candidates, intervention_matrix):
         nodes_stat_stable[node] = np.std(weighted_vars)
     if not nodes_stat_stable:
         raise ValueError("No valid candidate node found.")
-
+    
     smallest = min(nodes_stat_stable.values())
     # print(max(nodes_stat_stable.values()))
-    close_nodes = [n for n, v in nodes_stat_stable.items() if v < 5 * smallest]
+    close_nodes = [n for n, v in nodes_stat_stable.items() if v <= 5 * smallest]
     if len(close_nodes)>2:
         close_nodes = [n for n,_ in sorted(nodes_stat_stable.items(), key=lambda x: x[1])[:2]]
-    # print(f"close nodes: {close_nodes}")
 
     # Pick by largest intervention-matrix row sum; tie-break by smaller stability score.
     root_idx = max(
@@ -601,7 +599,7 @@ def node_stability_stat(samples, model, intervention_matrix, x_train, y_train,
 
 
 
-def learn_graph(samples, intervention_matrix, verbose=False):
+def TSCD_nonlinear(samples, intervention_matrix, verbose=False, gate_threshold=1):
     n_nodes, n_contexts = intervention_matrix.shape
     graph = np.zeros((n_nodes, n_nodes), dtype=int)
     perm = []
@@ -644,7 +642,7 @@ def learn_graph(samples, intervention_matrix, verbose=False):
             stats, selected_parents = node_stability_stat(
                 samples, model, intervention_matrix,
                 x_train, y_train, x_val, y_val,
-                node_to_fit, nodes_learned, history['val_loss'][-1],verbose=verbose
+                node_to_fit, nodes_learned, history['val_loss'][-1],verbose=verbose, gate_threshold=gate_threshold
             )
             parents_list[node] = selected_parents
 
@@ -710,7 +708,7 @@ def learn_graph(samples, intervention_matrix, verbose=False):
 
     return perm, graph, nodes_stat_stable_list
 
-def _candidate_job(node, perm, samples, intervention_matrix, verbose, base_seed=42):
+def _candidate_job(node, perm, samples, intervention_matrix, verbose, base_seed=42, gate_threshold=1):
     # per-job RNG: thread-local torch.Generator avoids cross-thread races on the
     # global default generator (which is what nn.Linear init normally uses).
     local_seed = base_seed * 100000 + len(perm) * 1000 + node
@@ -740,6 +738,7 @@ def _candidate_job(node, perm, samples, intervention_matrix, verbose, base_seed=
         history["val_loss"][-1],
         verbose=verbose,
         generator=gen,
+        gate_threshold=gate_threshold,
     )
 
     row_sum = np.sum(intervention_matrix[node, :])
@@ -759,13 +758,19 @@ def _candidate_job(node, perm, samples, intervention_matrix, verbose, base_seed=
 
 
 
-def learn_graph_parallel(samples, intervention_matrix, verbose=False, max_workers=4, base_seed=42):
+def TSCD_nonlinear_parallel(samples, intervention_matrix, verbose=False, max_workers=4, base_seed=42,  gate_threshold=1):
     n_nodes, n_contexts = intervention_matrix.shape
     graph = np.zeros((n_nodes, n_nodes), dtype=int)
     perm = []
     nodes_stat_stable_list = []
 
-    samples = [{k: np.array(v, copy=True) for k, v in ctx.items()} for ctx in samples]
+    def _as_context_dict(ctx):
+        if isinstance(ctx, dict):
+            return {k: np.array(v, copy=True) for k, v in ctx.items()}
+        arr = np.asarray(ctx)
+        return {j: np.array(arr[:, j], copy=True) for j in range(arr.shape[1])}
+
+    samples = [_as_context_dict(ctx) for ctx in samples]
 
     root_idx = find_root(samples, np.arange(n_nodes), intervention_matrix)
     perm.append(root_idx)
@@ -776,7 +781,7 @@ def learn_graph_parallel(samples, intervention_matrix, verbose=False, max_worker
         results = []
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
             futs = [
-                ex.submit(_candidate_job, node, perm, samples, intervention_matrix, verbose, base_seed)
+                ex.submit(_candidate_job, node, perm, samples, intervention_matrix, verbose, base_seed, gate_threshold)
                 for node in candidates
             ]
             for fut in as_completed(futs):
@@ -792,7 +797,7 @@ def learn_graph_parallel(samples, intervention_matrix, verbose=False, max_worker
         stats_dict = {r["node"]: r["stats_norm"] for r in results}
 
         smallest = min(nodes_stat_stable.values())
-        close_nodes = [n for n, v in nodes_stat_stable.items() if v < 5 * smallest]
+        close_nodes = [n for n, v in nodes_stat_stable.items() if v <= 5 * smallest]
         if len(close_nodes) > 2:
             close_nodes = [n for n, _ in sorted(nodes_stat_stable.items(), key=lambda x: x[1])[:2]]
 
@@ -851,7 +856,7 @@ if __name__ == "__main__":
     var_per_node = np.array([np.var(samples[0][k]) for k in nodes_sorted])
     order_by_var = [nodes_sorted[i] for i in np.argsort(var_per_node)]
     print('sortvar', order_by_var,'count_error',count_wrong_parents(order_by_var,DAG))
-    perm, graph_hat, _ = learn_graph_parallel(samples, intervention_matrix, verbose=False, max_workers = 5)
+    perm, graph_hat, _ = TSCD_nonlinear_parallel(samples, intervention_matrix, verbose=False, max_workers = 5)
     graph_true = generate_binary_adjacency_matrix(DAG)
 
     shd = int(np.abs(graph_true - graph_hat).sum())  # edge mismatches (directed)
