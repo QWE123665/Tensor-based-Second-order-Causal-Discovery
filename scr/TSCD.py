@@ -298,6 +298,31 @@ def TSCD(X_list, B,
 
 
 
+def TSCD_online(cov_list, B, sample_sizes,
+        n_candidates = 3, verbose = False,
+        alpha = 0.05, epsilon = 0.1, cov_obs_idx = 0):
+    n, k = B.shape
+
+    M_list = []
+    for i in range(k):
+        Cov_i = cov_list[i]
+        M = np.linalg.pinv(Cov_i)
+        for j in range(n):
+            if B[j, i] == 0 and Cov_i[j, j] != 0:
+                M[j, j] -= 1 / Cov_i[j, j]
+        M_list.append(M)
+    T = np.stack(M_list, axis=-1)
+
+    node_permutation = causal_order_from_proj_norms(
+        B, cov_list, T, sample_sizes,
+        n_candidates=n_candidates, verbose=verbose,
+        alpha=alpha, epsilon=epsilon,
+    )
+    Lambda_est = cholesky_from_causal_order(cov_list[cov_obs_idx], node_permutation)
+    return Lambda_est, node_permutation
+
+
+
 
 
 if __name__ == "__main__":
@@ -333,3 +358,8 @@ if __name__ == "__main__":
     Lambda_true, X_list, perm,_,_ = generate_LSEM_samples_perfect(n_nodes, edge_prob, sample_sizes, B, random_state=seed,eps_var = eps_var)
     Lambda_est, node_permutation = TSCD(X_list, B, n_candidates = 2)
     print(count_wrong_parents(node_permutation,Lambda_true), relFrob_error(Lambda_est,Lambda_true))
+
+    print("Testing TSCD_online (cov_list input)...")
+    cov_list = [np.cov(X.T) for X in X_list]
+    Lambda_est_online, node_permutation_online = TSCD_online(cov_list, B, sample_sizes, n_candidates = 2)
+    print(count_wrong_parents(node_permutation_online, Lambda_true), relFrob_error(Lambda_est_online, Lambda_true))

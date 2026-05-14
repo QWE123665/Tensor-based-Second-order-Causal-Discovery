@@ -162,9 +162,9 @@ def select_root_via_ancestor_search(
     strict=True,
     node_labels=None,
 ):
-    """Collect all parent-less nodes by walking upward through ``find_direct_parents``.
+    """Collect all parent-less nodes by walking upward through ``find_ancestors``.
 
-    Processes ``candidates`` in order. For each one, runs ``find_direct_parents``;
+    Processes ``candidates`` in order. For each one, runs ``find_ancestors``;
     parent-less nodes are accumulated as roots. When a node has parents, those
     parents (restricted to ``search_pool`` if given) are appended to the queue
     so they get tested too. The walk does not early-exit — it continues until
@@ -175,7 +175,7 @@ def select_root_via_ancestor_search(
     candidates : iterable of int
         Initial candidate indices.
     search_pool : iterable of int, optional
-        Restrict ``find_direct_parents`` to test only these indices as
+        Restrict ``find_ancestors`` to test only these indices as
         potential parents. Defaults to all nodes.
 
     Returns
@@ -228,7 +228,7 @@ def select_root_via_ancestor_search(
 
 
 
-def causal_order_from_parent_search(
+def causal_order_from_ancestor_search(
     B,
     covlist,
     T,
@@ -240,12 +240,12 @@ def causal_order_from_parent_search(
     epsilon=0.1,
     strict=True,
 ):
-    """Recover a causal order by parent-search at each peeling step.
+    """Recover a causal order by ancestor-search at each peeling step.
 
     At every iteration: rank remaining nodes by ``proj_norm``; take the top
     ``n_candidates`` as the search seeds and the top
     ``pool_multiplier * n_candidates`` as the pool of admissible parents;
-    call ``select_root_via_parent_search``, which returns *all* parent-less
+    call ``select_root_via_ancestor_search``, which returns *all* parent-less
     nodes it finds. Schur-complement out every such root in one pass before
     recomputing proj_norms.
     """
@@ -337,9 +337,9 @@ def TSCD_ancestor_search(
     epsilon=0.1,
     strict=True,
 ):
-    """End-to-end LSEM recovery via parent-search ordering plus regression fit.
+    """End-to-end LSEM recovery via ancestor-search ordering plus regression fit.
 
-    Wraps ``causal_order_from_parent_search`` (to recover the causal order)
+    Wraps ``causal_order_from_ancestor_search`` (to recover the causal order)
     and ``lambda_from_causal_order_regression`` (to fit ``Lambda`` from the
     observational covariance, no Cholesky).
 
@@ -355,7 +355,7 @@ def TSCD_ancestor_search(
     M_list = concentration_list(X_list, B)
     T = np.stack(M_list, axis=-1)
 
-    node_permutation = causal_order_from_parent_search(
+    node_permutation = causal_order_from_ancestor_search(
         B,
         cov_list,
         T,
@@ -370,6 +370,46 @@ def TSCD_ancestor_search(
     Lambda_est = lambda_from_causal_order_regression(
         cov_list[0], node_permutation, threshold=threshold, ridge=ridge,
     )
+    return Lambda_est, node_permutation
+
+
+def TSCD_ancestor_search_online(
+    cov_list,
+    B,
+    sample_sizes,
+    n_candidates=3,
+    pool_multiplier=10,
+    verbose=False,
+    alpha=0.05,
+    epsilon=0.1,
+    strict=True,
+    cov_obs_idx=0,
+):
+    n, k = B.shape
+
+    M_list = []
+    for i in range(k):
+        Cov_i = cov_list[i]
+        M = np.linalg.pinv(Cov_i)
+        for j in range(n):
+            if B[j, i] == 0 and Cov_i[j, j] != 0:
+                M[j, j] -= 1 / Cov_i[j, j]
+        M_list.append(M)
+    T = np.stack(M_list, axis=-1)
+
+    node_permutation = causal_order_from_ancestor_search(
+        B,
+        cov_list,
+        T,
+        sample_sizes,
+        n_candidates=n_candidates,
+        pool_multiplier=pool_multiplier,
+        verbose=verbose,
+        alpha=alpha,
+        epsilon=epsilon,
+        strict=strict,
+    )
+    Lambda_est = cholesky_from_causal_order(cov_list[cov_obs_idx], node_permutation)
     return Lambda_est, node_permutation
 
 
