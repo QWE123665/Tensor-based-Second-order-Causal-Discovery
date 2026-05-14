@@ -17,14 +17,16 @@ Two variants are provided:
 
 After the order is recovered, the adjacency matrix is fit by regressing each node on its predecessors.
 
+Each variant has an **online** counterpart — `TSCD_online` and `TSCD_ancestor_search_online` — that takes per-environment covariance matrices and sample sizes directly instead of raw `X_list`. The online versions are useful when samples are too large to hold in memory or when only summary statistics are available. They recover Lambda via a Cholesky decomposition of the observational covariance in the recovered order.
+
 ## Repository layout
 
 ```
 scr/
-  TSCD.py                    # main algorithm
-  TSCD_ancestor_search.py    # parent-search variant
+  TSCD.py                    # main algorithm (+ TSCD_online: cov_list input)
+  TSCD_ancestor_search.py    # ancestor-search variant (+ _online counterpart)
   generate_LSEM.py           # synthetic linear SEM data generation
-  utils.py                   # tensor / regression helpers
+  myutils.py                 # tensor / regression helpers
   metrics.py                 # SHD, edge-error, etc.
   TSCD_nonlinear.py          # nonlinear SEM extension
   other_algorithms/          # baselines: GES, GIES, PC, IGSP, LiNGAM, NoTears, sort_regress
@@ -74,4 +76,17 @@ Lambda_est, node_order = TSCD(X_list, B, n_candidates=2)
 ```
 
 `X_list[i]` is the sample matrix for environment `i`; `B[j, i] == 1` indicates that node `j` is intervened in environment `i`.
+
+If you only have per-environment covariance matrices (e.g. precomputed summaries), use the online variant:
+
+```python
+from TSCD import TSCD_online
+
+cov_list = [np.cov(X.T) for X in X_list]
+sample_sizes = [X.shape[0] for X in X_list]
+
+Lambda_est, node_order = TSCD_online(cov_list, B, sample_sizes, n_candidates=2)
+```
+
+By default the Cholesky decoding uses `cov_list[0]`; pass `cov_obs_idx=i` to use a different environment as the observational reference.
 
