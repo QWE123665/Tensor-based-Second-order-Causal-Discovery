@@ -135,7 +135,6 @@ METHOD_REGISTRY: dict[str, MethodSpec] = {
         "interventional",
         "lambda",
     ),
-    # "our_method_simple_mainbranch": MethodSpec("our_method_simple_mainbranch", "scr.our_method_simple_mainbranch", "our_method_simple_mainbranch", "interventional", "lambda"),
 }
 
 # Helpers for compute_metrics
