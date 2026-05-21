@@ -56,7 +56,7 @@ METHODS = [
 # Sweep over Cartesian product of NODES, SAMPLE_SIZES, EDGE_PROBS
 NODES = [10]
 SAMPLE_SIZES = [int(x) for x in list(np.logspace(np.log10(100), np.log10(10000), 20, dtype=int)) ]
-EDGE_PROBS = [0.6] # TODO: If edge prob <1, account for topological orders allowed
+EDGE_PROBS = [0.6] 
 
 N_TRIALS = 30
 SEED = 42
