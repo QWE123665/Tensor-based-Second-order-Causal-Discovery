@@ -259,6 +259,11 @@ def sample_environment_data(
 
 
 def run_single_method(method_callable, spec: MethodSpec, X_list: list[np.ndarray], Y: np.ndarray, B: np.ndarray):
+    """
+    Runs single method.
+    Assumes that interventional methods take 'X_list' and 'B' as first and second parameters, respectively.
+    Assumes that non-interventional methods take 'Y' as first parameter.
+    """
     start = time.perf_counter()
     try:
         output = method_callable(X_list, B) if spec.input_kind == "interventional" else method_callable(Y)
