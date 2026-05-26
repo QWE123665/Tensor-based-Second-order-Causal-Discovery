@@ -333,6 +333,7 @@ def TSCD_ancestor_search(
     threshold=0.1,
     ridge=1e-10,
     verbose=False,
+    only_obs = False,
     alpha=0.05,
     epsilon=0.1,
     strict=True,
@@ -367,9 +368,15 @@ def TSCD_ancestor_search(
         epsilon=epsilon,
         strict=strict,
     )
-    Lambda_est = lambda_from_causal_order_regression(
-        cov_list[0], node_permutation, threshold=threshold, ridge=ridge,
-    )
+    if only_obs:
+        Lambda_est = lambda_from_causal_order_regression(
+            cov_list[0], node_permutation, threshold=threshold, ridge=ridge,
+        )
+    else:
+        Lambda_est = improve_Lambda_causal_order_regression_all_pure(
+            X_list, B, node_permutation
+        )
+
     return Lambda_est, node_permutation
 
 
@@ -411,7 +418,3 @@ def TSCD_ancestor_search_online(
     )
     Lambda_est = cholesky_from_causal_order(cov_list[cov_obs_idx], node_permutation)
     return Lambda_est, node_permutation
-
-
-
-
