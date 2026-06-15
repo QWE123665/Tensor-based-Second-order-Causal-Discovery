@@ -336,7 +336,7 @@ def TSCD_ancestor_search(
     epsilon=0.1,
     strict=True,
 ):
-    """End-to-end LSEM recovery via ancestor-search ordering plus regression fit.
+    """End-to-end LSEM recovery via ancestor-search ordering plus LASSO regression fit.
 
     Wraps ``causal_order_from_ancestor_search`` (to recover the causal order)
     and ``lambda_from_causal_order_regression`` (to fit ``Lambda`` from the
