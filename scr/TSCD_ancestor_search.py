@@ -330,8 +330,6 @@ def TSCD_ancestor_search(
     B,
     n_candidates=3,
     pool_multiplier=10,
-    threshold=0.1,
-    ridge=1e-10,
     verbose=False,
     only_obs = False,
     alpha=0.05,
@@ -369,13 +367,9 @@ def TSCD_ancestor_search(
         strict=strict,
     )
     if only_obs:
-        Lambda_est = lambda_from_causal_order_regression(
-            cov_list[0], node_permutation, threshold=threshold, ridge=ridge,
-        )
+        Lambda_est = _estimate_adjacency_matrix(node_permutation, X_list[0])
     else:
-        Lambda_est = improve_Lambda_causal_order_regression_all_pure(
-            X_list, B, node_permutation
-        )
+        Lambda_est = improve_Lambda_causal_order_regression_all_pure(X_list, B, node_permutation)
 
     return Lambda_est, node_permutation
 
