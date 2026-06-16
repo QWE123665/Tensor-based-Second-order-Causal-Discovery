@@ -4,27 +4,23 @@ Causal discovery from interventional data using second-order (covariance) statis
 
 ## Method
 
-TSCD operates on the stack of inverse covariances across environments. For a linear SEM, this stack is a third-order tensor whose structure encodes the causal order. The algorithm peels nodes one at a time:
+TSCD operates on the stack of inverse covariances across environments. For a linear SEM, this stack is a third-order tensor whose structure encodes the causal order. The algorithm peels root nodes one at a time:
 
 1. Score each remaining node by the projected norm of its row in the orthonormalized concentration tensor.
 2. Among the top candidates, run pairwise correlation tests across intervention contexts (`both intervened`, `i intervened only`, `j intervened only`) to decide adjacency and direction.
 3. Schur-complement out the chosen root and repeat.
 
-Two variants are provided:
-
-- **`TSCD`** ([scr/TSCD.py](scr/TSCD.py)) — root selection via stability of projection norm plus pairwise tests.
-- **`TSCD_ancestor_search`** ([scr/TSCD_ancestor_search.py](scr/TSCD_ancestor_search.py)) — at each peel, walks upward from top-ranked candidates by repeatedly testing for parents, returning all parent-less nodes in one batch.
+**`TSCD`** performs root selection via stability of projection norm plus pairwise tests.
 
 After the order is recovered, the adjacency matrix is fit by regressing each node on its predecessors.
 
-Each variant has an **online** counterpart — `TSCD_online` and `TSCD_ancestor_search_online` — that takes per-environment covariance matrices and sample sizes directly instead of raw `X_list`. The online versions are useful when samples are too large to hold in memory or when only summary statistics are available. They recover Lambda via a Cholesky decomposition of the observational covariance in the recovered order.
+An **online** counterpart `TSCD_online` is provided that takes per-environment covariance matrices and sample sizes directly instead of raw `X_list`. The online version is useful when samples are too large to hold in memory or when only summary statistics are available. It recovers Lambda via a Cholesky decomposition of the observational covariance in the recovered order.
 
 ## Repository layout
 
 ```
 scr/
   TSCD.py                    # main algorithm (+ TSCD_online: cov_list input)
-  TSCD_ancestor_search.py    # ancestor-search variant (+ _online counterpart)
   generate_LSEM.py           # synthetic linear SEM data generation
   myutils.py                 # tensor / regression helpers
   metrics.py                 # SHD, edge-error, etc.
